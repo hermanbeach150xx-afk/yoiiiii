@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>音频按钮板（仅管理员可修改）</title>
+    <title>音频按钮板（仓库音频版）</title>
     <style>
-        /* 基础样式不变，新增权限控制相关样式 */
+        /* 样式和之前一致，无需修改 */
         body {
             font-family: "微软雅黑", Arial, sans-serif;
             max-width: 1000px;
@@ -13,8 +13,6 @@
             padding: 0 20px;
             background-color: #f8f8f8;
         }
-
-        /* 管理员登录按钮 */
         .admin-login {
             text-align: right;
             margin-bottom: 10px;
@@ -30,8 +28,6 @@
         #admin-login-btn:hover {
             background-color: #555;
         }
-
-        /* 全局暂停按钮样式 */
         .global-control {
             text-align: center;
             margin-bottom: 20px;
@@ -49,15 +45,13 @@
         #pause-all-btn:hover {
             background-color: #e03355;
         }
-
-        /* 操作区域（默认隐藏，管理员登录后显示） */
         .control-area {
             background: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             margin-bottom: 30px;
-            display: none; /* 默认隐藏 */
+            display: none;
         }
         .control-group {
             margin-bottom: 15px;
@@ -96,15 +90,11 @@
             color: #666;
             margin-left: 10px;
         }
-
-        /* 板块容器 */
         .board-container {
             display: flex;
             flex-direction: column;
             gap: 25px;
         }
-
-        /* 单个板块样式 */
         .section {
             background: white;
             padding: 15px 20px;
@@ -124,7 +114,6 @@
             border-left: 4px solid #ff4466;
             padding-left: 10px;
         }
-        /* 删除板块按钮（默认隐藏，管理员可见） */
         .delete-section-btn {
             padding: 4px 8px;
             background-color: #ff7788;
@@ -133,25 +122,20 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
-            display: none; /* 默认隐藏 */
+            display: none;
         }
         .delete-section-btn:hover {
             background-color: #ff5566;
         }
-
-        /* 按钮容器 */
         .button-group {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
         }
-
-        /* 音频按钮容器 */
         .audio-btn-wrapper {
             display: flex;
             align-items: center;
         }
-        /* 播放按钮（所有人可见） */
         .play-btn {
             padding: 8px 15px;
             background-color: #ff4466;
@@ -165,7 +149,6 @@
         .play-btn:hover {
             background-color: #e03355;
         }
-        /* 删除按钮（默认隐藏，管理员可见） */
         .delete-btn {
             padding: 8px 8px;
             background-color: #ff7788;
@@ -174,13 +157,11 @@
             border-radius: 0 20px 20px 0;
             cursor: pointer;
             font-size: 14px;
-            display: none; /* 默认隐藏 */
+            display: none;
         }
         .delete-btn:hover {
             background-color: #ff5566;
         }
-
-        /* 清空数据按钮样式 */
         #clear-data-btn {
             background-color: #666;
             margin-left: 10px;
@@ -188,30 +169,21 @@
         #clear-data-btn:hover {
             background-color: #555;
         }
-
-        /* 管理员模式提示 */
         .admin-tip {
             color: #ff4466;
             text-align: center;
-            display: none; /* 默认隐藏 */
+            display: none;
         }
     </style>
 </head>
 <body>
-    <!-- 管理员登录按钮（所有人可见，点击弹出密码框） -->
     <div class="admin-login">
         <button id="admin-login-btn">管理员登录</button>
     </div>
-
-    <!-- 管理员模式提示（登录后显示） -->
     <div class="admin-tip" id="admin-tip">✅ 已进入管理员模式，可修改板块/按钮</div>
-
-    <!-- 全局暂停按钮（所有人可见） -->
     <div class="global-control">
         <button id="pause-all-btn">暂停当前播放的音频</button>
     </div>
-
-    <!-- 操作区域（管理员可见） -->
     <div class="control-area" id="control-area">
         <div class="control-group">
             <label>添加新板块</label>
@@ -219,72 +191,64 @@
             <button class="control-btn" id="add-section-btn">添加板块</button>
         </div>
         <div class="control-group">
-            <label>添加新音频按钮</label>
+            <label>添加仓库音频按钮（仅管理员）</label>
             <form id="audio-form">
                 <select id="section-select"></select>
                 <input type="text" id="btn-text" placeholder="按钮显示文字">
-                <input type="file" id="btn-audio" accept="audio/*">
+                <input type="text" id="audio-url" placeholder="仓库音频Raw地址（如https://raw...mp3）">
                 <button type="button" class="control-btn" id="add-btn">添加按钮</button>
                 <span class="loading-text" id="loading-tip"></span>
             </form>
         </div>
         <div class="control-group">
-            <button class="control-btn" id="clear-data-btn">清空所有数据（谨慎）</button>
+            <button class="control-btn" id="clear-data-btn">清空本地数据（谨慎）</button>
         </div>
     </div>
-
-    <!-- 板块容器（所有人可见） -->
     <div class="board-container" id="board-container"></div>
 
     <script>
-        // ------------- 核心配置：修改这里的密码和初始内容 -------------
-        // 1. 自定义管理员密码（改成你自己的，比如"123456"）
-        const ADMIN_PASSWORD = "yoiyoi";
-        // 2. 预设初始内容（你希望所有人都能看到的板块/按钮，可自行修改）
+        // ------------- 核心配置 -------------
+        const ADMIN_PASSWORD = "你的管理员密码"; // 替换为你的密码
+        // 默认内容：直接引用仓库里的音频URL，无需Base64
         const DEFAULT_DATA = {
-            sections: ['又一怪笑', '又一语录', '又一'],
+            sections: ['纸の语录', '拼好话', '纸の怪话'],
             buttons: [
-                // 示例：添加你预设的音频按钮（需要替换成自己的Base64音频）
-                // {
-                //     id: generateId(),
-                //     section: '又一',
-                //     text: '预设按钮1',
-                //     audioBase64: '你的音频Base64编码'
-                // }
+                // 示例：添加仓库音频按钮，替换为你自己的音频Raw地址
+                {
+                    id: "1",
+                    section: '纸の语录',
+                    text: '测试音频1',
+                    audioUrl: 'https://raw.githubusercontent.com/你的用户名/仓库名/main/audio/test1.mp3'
+                },
+                {
+                    id: "2",
+                    section: '拼好话',
+                    text: '测试音频2',
+                    audioUrl: 'https://raw.githubusercontent.com/你的用户名/仓库名/main/audio/test2.mp3'
+                }
             ]
         };
 
         // ------------- 全局变量 -------------
         let currentAudio = null;
-        let isAddingBtn = false;
-        let isAdmin = false; // 是否为管理员
+        let isAdmin = false;
         const STORAGE_KEY = 'audioButtonBoardData';
 
-        // 生成唯一ID
-        function generateId() {
-            return Date.now() + '-' + Math.random().toString(36).substr(2, 9) + '-' + Math.random().toString(36).substr(2, 9);
-        }
-
-        // ------------- 权限控制核心函数 -------------
-        // 管理员登录（验证密码）
+        // ------------- 权限控制 -------------
         function adminLogin() {
             const inputPwd = prompt("请输入管理员密码：");
             if (inputPwd === ADMIN_PASSWORD) {
                 isAdmin = true;
-                unlockAdminFunctions(); // 解锁所有修改功能
+                unlockAdminFunctions();
                 alert("登录成功！已进入管理员模式");
             } else if (inputPwd !== null) {
-                alert("密码错误！无法进入管理员模式");
+                alert("密码错误！");
             }
         }
 
-        // 解锁管理员功能（显示所有修改按钮）
         function unlockAdminFunctions() {
-            // 显示操作区域
             document.getElementById('control-area').style.display = 'block';
-            // 显示管理员提示
             document.getElementById('admin-tip').style.display = 'block';
-            // 显示所有删除按钮（板块+音频）
             document.querySelectorAll('.delete-section-btn').forEach(btn => {
                 btn.style.display = 'inline-block';
             });
@@ -293,52 +257,35 @@
             });
         }
 
-        // ------------- 数据处理函数 -------------
-        // 读取数据（普通访客用预设数据，管理员用本地存储）
+        // ------------- 数据处理 -------------
         function loadData() {
             if (isAdmin) {
-                // 管理员：优先读取本地存储，无则用预设
+                // 管理员：优先读取本地存储（自己添加的临时按钮），无则用默认（仓库音频）
                 const rawData = localStorage.getItem(STORAGE_KEY);
                 if (rawData) {
                     try {
                         return JSON.parse(rawData);
                     } catch (e) {
-                        alert('读取本地数据失败，使用预设数据：' + e.message);
-                        return DEFAULT_DATA;
+                        alert('读取本地数据失败，使用仓库默认音频：' + e.message);
+                        return JSON.parse(JSON.stringify(DEFAULT_DATA));
                     }
                 }
             }
-            // 普通访客：只能用预设数据，无法修改
+            // 访客：仅读取仓库默认音频
             return JSON.parse(JSON.stringify(DEFAULT_DATA));
         }
 
-        // 保存数据（仅管理员可保存）
         function saveData(data) {
             if (isAdmin) {
                 try {
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
                 } catch (e) {
-                    alert('保存数据失败：' + e.message);
+                    alert('保存本地数据失败：' + e.message);
                 }
             }
         }
 
-        // 音频转Base64
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const maxSize = 10 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    reject(new Error(`文件过大（${(file.size/1024/1024).toFixed(2)}MB），请选择小于10MB的音频`));
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = (err) => reject(new Error('文件读取失败：' + err.message));
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // ------------- 音频播放控制 -------------
+        // ------------- 音频播放控制（核心：直接播放URL，无需Base64） -------------
         function stopCurrentAudio() {
             if (currentAudio) {
                 currentAudio.pause();
@@ -347,11 +294,12 @@
             }
         }
 
-        function playAudio(audioBase64) {
+        function playAudio(audioUrl) {
             stopCurrentAudio();
-            const audio = new Audio(audioBase64);
+            // 直接创建音频对象，播放仓库里的URL
+            const audio = new Audio(audioUrl);
             audio.play().catch(error => {
-                alert(`播放失败：${error.message}\n（请先点击页面再播放）`);
+                alert(`播放失败：${error.message}\n1. 检查音频URL是否正确；2. 先点击页面再播放`);
             });
             audio.onended = () => {
                 currentAudio = null;
@@ -365,7 +313,7 @@
             }
         }
 
-        // ------------- DOM和渲染函数 -------------
+        // ------------- DOM和渲染 -------------
         function getDOMElements() {
             return {
                 pauseAllBtn: document.getElementById('pause-all-btn'),
@@ -373,7 +321,7 @@
                 addSectionBtn: document.getElementById('add-section-btn'),
                 sectionSelect: document.getElementById('section-select'),
                 btnTextInput: document.getElementById('btn-text'),
-                btnAudioInput: document.getElementById('btn-audio'),
+                audioUrlInput: document.getElementById('audio-url'),
                 addBtn: document.getElementById('add-btn'),
                 loadingTip: document.getElementById('loading-tip'),
                 audioForm: document.getElementById('audio-form'),
@@ -383,7 +331,6 @@
             };
         }
 
-        // 渲染所有板块
         function renderAllSections() {
             const els = getDOMElements();
             els.boardContainer.innerHTML = '';
@@ -402,7 +349,6 @@
                 `;
                 els.boardContainer.appendChild(section);
 
-                // 绑定删除板块事件（仅管理员可触发）
                 section.querySelector('.delete-section-btn').addEventListener('click', (e) => {
                     if (isAdmin) {
                         deleteSection(e.target.dataset.section);
@@ -411,17 +357,14 @@
                     }
                 });
 
-                // 渲染按钮
                 renderButtonsInSection(sectionName);
             });
 
-            // 管理员登录后，显示删除按钮
             if (isAdmin) {
                 unlockAdminFunctions();
             }
         }
 
-        // 渲染板块内按钮
         function renderButtonsInSection(sectionName) {
             const btnContainer = document.getElementById(`section-${sectionName}`);
             if (!btnContainer) return;
@@ -434,15 +377,14 @@
                 btnWrapper.className = 'audio-btn-wrapper';
                 btnWrapper.dataset.btnId = btn.id;
 
-                // 播放按钮（所有人可见）
                 const playBtn = document.createElement('button');
                 playBtn.className = 'play-btn';
                 playBtn.textContent = btn.text;
                 playBtn.addEventListener('click', () => {
-                    playAudio(btn.audioBase64);
+                    // 播放仓库里的音频URL
+                    playAudio(btn.audioUrl);
                 });
 
-                // 删除按钮（仅管理员可见）
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'delete-btn';
                 deleteBtn.textContent = '×';
@@ -461,7 +403,6 @@
             });
         }
 
-        // 初始化板块下拉框
         function initSectionSelect() {
             const els = getDOMElements();
             els.sectionSelect.innerHTML = '';
@@ -474,10 +415,10 @@
             });
         }
 
-        // ------------- 删除功能（仅管理员） -------------
+        // ------------- 删除功能 -------------
         function deleteButton(btnId) {
             if (!isAdmin) return;
-            if (confirm('确定删除该按钮吗？')) {
+            if (confirm('确定删除该按钮吗？（仅删除本地数据，仓库音频仍保留）')) {
                 let boardData = loadData();
                 boardData.buttons = boardData.buttons.filter(btn => btn.id !== btnId);
                 saveData(boardData);
@@ -487,7 +428,7 @@
 
         function deleteSection(sectionName) {
             if (!isAdmin) return;
-            if (confirm(`确定删除「${sectionName}」板块吗？`)) {
+            if (confirm(`确定删除「${sectionName}」板块吗？（仅删除本地数据）`)) {
                 let boardData = loadData();
                 boardData.sections = boardData.sections.filter(name => name !== sectionName);
                 boardData.buttons = boardData.buttons.filter(btn => btn.section !== sectionName);
@@ -497,7 +438,7 @@
             }
         }
 
-        // ------------- 添加功能（仅管理员） -------------
+        // ------------- 添加功能（管理员添加仓库音频按钮） -------------
         function addNewSection() {
             if (!isAdmin) return;
             const els = getDOMElements();
@@ -518,60 +459,51 @@
             els.sectionNameInput.value = '';
         }
 
-        async function addNewAudioBtn() {
+        function addNewAudioBtn() {
             if (!isAdmin) {
                 alert('无权限添加！');
-                return;
-            }
-            if (isAddingBtn) {
-                alert('正在处理上一个音频，请稍等！');
                 return;
             }
             const els = getDOMElements();
             const sectionName = els.sectionSelect.value;
             const btnText = els.btnTextInput.value.trim();
-            const audioFile = els.btnAudioInput.files[0];
+            const audioUrl = els.audioUrlInput.value.trim();
 
+            // 验证输入
             if (!btnText) {
                 alert('请输入按钮文字！');
                 return;
             }
-            if (!audioFile || !audioFile.type.startsWith('audio/')) {
-                alert('请选择有效的音频文件！');
+            if (!audioUrl || !audioUrl.startsWith('https://raw.githubusercontent.com/')) {
+                alert('请输入有效的仓库音频Raw地址！');
                 return;
             }
 
             try {
-                isAddingBtn = true;
-                els.addBtn.disabled = true;
-                els.loadingTip.textContent = '正在处理音频，请稍等...';
-                const audioBase64 = await fileToBase64(audioFile);
-                const btnId = generateId();
-
                 let boardData = loadData();
+                // 生成唯一ID
+                const btnId = Date.now().toString();
+                // 添加按钮（引用仓库音频URL）
                 boardData.buttons.push({
                     id: btnId,
                     section: sectionName,
                     text: btnText,
-                    audioBase64: audioBase64
+                    audioUrl: audioUrl
                 });
                 saveData(boardData);
                 renderAllSections();
+                // 清空输入框
                 els.audioForm.reset();
-                alert('音频按钮添加成功！');
+                alert('仓库音频按钮添加成功！（如需所有人可见，需更新代码里的DEFAULT_DATA）');
             } catch (err) {
                 alert(`添加失败：${err.message}`);
-            } finally {
-                isAddingBtn = false;
-                els.addBtn.disabled = false;
-                els.loadingTip.textContent = '';
             }
         }
 
-        // 清空数据（仅管理员）
+        // 清空本地数据（仅管理员）
         function clearAllData() {
             if (!isAdmin) return;
-            if (confirm('确定清空所有数据吗？')) {
+            if (confirm('确定清空本地数据吗？（仓库默认音频仍保留）')) {
                 const boardData = JSON.parse(JSON.stringify(DEFAULT_DATA));
                 saveData(boardData);
                 renderAllSections();
@@ -582,20 +514,15 @@
         // ------------- 初始化 -------------
         function init() {
             const els = getDOMElements();
-            // 绑定管理员登录事件
             els.adminLoginBtn.addEventListener('click', adminLogin);
-            // 绑定全局暂停事件
             els.pauseAllBtn.addEventListener('click', pauseAllAudio);
-            // 管理员功能事件（仅登录后生效）
             els.addSectionBtn.addEventListener('click', addNewSection);
             els.addBtn.addEventListener('click', addNewAudioBtn);
             els.clearDataBtn.addEventListener('click', clearAllData);
-            // 初始渲染
             renderAllSections();
             initSectionSelect();
         }
 
-        // 启动页面
         init();
     </script>
 </body>
