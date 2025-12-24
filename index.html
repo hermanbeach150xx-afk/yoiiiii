@@ -208,25 +208,12 @@
 
     <script>
         // ------------- 核心配置 -------------
-        const ADMIN_PASSWORD = "你的管理员密码"; // yoiyoi
+        const ADMIN_PASSWORD = "yoiyoi"; // yoiyoi
         // 默认内容：直接引用仓库里的音频URL，无需Base64
         const DEFAULT_DATA = {
             sections: ['又一怪笑', '又一语音', '又一语录'],
-            buttons: [
-                // 示例：添加仓库音频按钮，替换为你自己的音频Raw地址
-                {
-                    id: "1",
-                    section: '又一怪笑',
-                    text: '测试音频1',
-                    audioUrl: 'https://raw.githubusercontent.com/你的用户名/仓库名/main/audio/test1.mp3'
-                },
-                {
-                    id: "2",
-                    section: '又一语音',
-                    text: '测试音频2',
-                    audioUrl: 'https://raw.githubusercontent.com/你的用户名/仓库名/main/audio/test2.mp3'
-                }
-            ]
+            buttons: [ ]
+      
         };
 
         // ------------- 全局变量 -------------
@@ -527,6 +514,7 @@
     </script>
 </body>
 </html>
+
 
 
 
