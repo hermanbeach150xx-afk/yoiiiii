@@ -661,13 +661,12 @@
 3. 错误原因：${error.message}`);
         // 重试播放（确保用户交互触发）
         audio.play();
-    });
+    });//
     audio.onended = () => {
         currentAudio = null;
     };
     currentAudio = audio;
 }
-
         function pauseAllAudio() {
             if (currentAudio) {
                 currentAudio.pause();
@@ -902,6 +901,7 @@ els.exportDataBtn.addEventListener('click', exportDataToGitHub);
     </script>
 </body>
 </html>
+
 
 
 
