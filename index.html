@@ -203,6 +203,9 @@
         <div class="control-group">
             <button class="control-btn" id="clear-data-btn">清空本地数据（谨慎）</button>
         </div>
+        <div class="control-group">
+    <button class="control-btn" id="export-data-btn">导出同步代码（复制到GitHub）</button>
+</div>
     </div>
     <div class="board-container" id="board-container"></div>
 
@@ -497,7 +500,18 @@
                 initSectionSelect();
             }
         }
-
+// 导出同步代码到剪贴板（新增函数）
+function exportDataToGitHub() {
+    const boardData = loadData();
+    // 生成DEFAULT_DATA的代码片段（格式化，直接粘贴到GitHub）
+    const defaultDataCode = `const DEFAULT_DATA = ${JSON.stringify(boardData, null, 2)};`;
+    // 复制到剪贴板
+    navigator.clipboard.writeText(defaultDataCode).then(() => {
+        alert('同步代码已复制！直接粘贴到GitHub的HTML文件里即可');
+    }).catch(err => {
+        alert('复制失败，请手动复制：\n' + defaultDataCode);
+    });
+}
         // ------------- 初始化 -------------
         function init() {
             const els = getDOMElements();
@@ -506,6 +520,9 @@
             els.addSectionBtn.addEventListener('click', addNewSection);
             els.addBtn.addEventListener('click', addNewAudioBtn);
             els.clearDataBtn.addEventListener('click', clearAllData);
+           // 绑定导出同步代码按钮事件（新增）
+els.exportDataBtn = document.getElementById('export-data-btn');
+els.exportDataBtn.addEventListener('click', exportDataToGitHub);
             renderAllSections();
             initSectionSelect();
         }
@@ -514,6 +531,7 @@
     </script>
 </body>
 </html>
+
 
 
 
