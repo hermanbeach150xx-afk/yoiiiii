@@ -649,19 +649,14 @@
             }
         }
 
-        function playAudio(audioUrl) {
+   function playAudio(audioUrl) {
     stopCurrentAudio();
     const audio = new Audio(audioUrl);
-    audio.load(); // 先加载音频，适配手机
+    audio.load();
     audio.play().catch(error => {
-        // 手机专属提示（更友好）
-        alert(`📱 手机播放提示：
-1. 先点击页面空白处激活，再点播放
-2. 建议用手机Chrome/Edge/Safari打开
-3. 错误原因：${error.message}`);
-        // 重试播放（确保用户交互触发）
+        alert('📱 手机播放提示：\n1. 先点击页面空白处激活，再点播放\n2. 建议用手机Chrome/Edge/Safari打开\n3. 错误原因：' + error.message);
         audio.play();
-    });//
+    });
     audio.onended = () => {
         currentAudio = null;
     };
@@ -901,6 +896,7 @@ els.exportDataBtn.addEventListener('click', exportDataToGitHub);
     </script>
 </body>
 </html>
+
 
 
 
