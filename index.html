@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>又一按钮</title>
-    <style>
-        /* 所有样式保持不变 */
+    <style><!-- 引入不蒜子统计脚本（实时访问人数） -->
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+        /* 样式和之前一致，无需修改 */
         body {
             font-family: "微软雅黑", Arial, sans-serif;
             max-width: 1000px;
@@ -44,6 +45,7 @@
         #pause-all-btn:hover {
             background-color: #e03355;
         }
+        /* 新增：播放提示样式 */
         .play-tip {
             text-align: center;
             color: #ff4466;
@@ -181,13 +183,13 @@
             display: none;
         }
     </style>
-    <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 </head>
 <body>
     <div class="admin-login">
         <button id="admin-login-btn">管理员登录</button>
     </div>
     <div class="admin-tip" id="admin-tip">✅ 已进入管理员模式，可修改板块/按钮</div>
+    <!-- 新增：播放提示（针对Edge等浏览器） -->
     <div class="play-tip">
         ⚠️ 播放提示：先点击页面空白处激活，再点击按钮播放（兼容Edge/Chrome）
     </div>
@@ -218,18 +220,18 @@
         </div>
     </div>
     <div class="board-container" id="board-container"></div>
-    <div style="text-align: center; margin: 20px 0; font-size: 14px; color: #666; padding-top: 20px; border-top: 1px solid #eee;">
-        👥 总独立访客数：<span id="busuanzi_value_site_uv"></span>
-        &nbsp;&nbsp;｜&nbsp;&nbsp;
-        📊 总访问量：<span id="busuanzi_value_site_pv"></span>
-        &nbsp;&nbsp;｜&nbsp;&nbsp;
-        📅 今日访问量：<span id="busuanzi_value_page_pv"></span>
-    </div>
-    <script>
-        // ------------- 核心配置（密码已隐藏：改用哈希值对比） -------------
-        const PASSWORD_HASH = "34f2e113d8c9c0393842f252b9756e9c"; // 对应的正确32位MD5哈希
-        // 默认内容：音频URL完全不变
-        const DEFAULT_DATA = {
+<!-- 访问人数显示区域（自定义样式，可修改） -->
+<div style="text-align: center; margin: 20px 0; font-size: 14px; color: #666; padding-top: 20px; border-top: 1px solid #eee;">
+    👥 总独立访客数：<span id="busuanzi_value_site_uv"></span>
+    &nbsp;&nbsp;｜&nbsp;&nbsp;
+    📊 总访问量：<span id="busuanzi_value_site_pv"></span>
+    &nbsp;&nbsp;｜&nbsp;&nbsp;
+    📅 今日访问量：<span id="busuanzi_value_page_pv"></span>
+</div>
+<script>
+    // ------------- 核心配置（密码已隐藏：改用哈希值对比） -------------
+    const PASSWORD_HASH = "34f2e113d8c9c0393842f252b9756e9c";
+    const DEFAULT_DATA = {
   "sections": [
     "又一怪笑",
     "又一语录",
@@ -804,419 +806,390 @@
     }
   ]
 };
-        // ------------- 全局变量 -------------
-        let currentAudio = null;
-        let isAdmin = false;
-        const STORAGE_KEY = 'audioButtonBoardData';
-        const audioCache = {};
+    // ------------- 全局变量 -------------
+    let currentAudio = null;
+    let isAdmin = false;
+    const STORAGE_KEY = 'audioButtonBoardData';
+    const audioCache = {};
 
-        // ------------- 替换后的标准MD5函数（可正确生成32位哈希，兼容所有浏览器） -------------
-        function md5(str) {
-          // 强制纯JS实现的MD5函数（无浏览器原生API依赖，解决NotSupportedError报错）
-function md5(str) {
-    // 直接禁用原生API，强制使用纯JS实现，避免兼容问题
-    var rotl = function(n, r) {
-        return (n << r) | (n >>> (32 - r));
-    };
-    var uint8ToUint32 = function(arr) {
-        var res = [];
-        for (var i = 0; i < arr.length; i += 4) {
-            res.push(arr[i] | (arr[i + 1] << 8) | (arr[i + 2] << 16) | (arr[i + 3] << 24));
-        }
-        return res;
-    };
-    var uint32ToUint8 = function(arr) {
-        var res = [];
-        for (var i = 0; i < arr.length; i++) {
-            res.push(arr[i] & 0xff, (arr[i] >>> 8) & 0xff, (arr[i] >>> 16) & 0xff, (arr[i] >>> 24) & 0xff);
-        }
-        return res;
-    };
-    var padMessage = function(msg) {
-        var ml = msg.length * 8;
-        msg.push(0x80);
-        while ((msg.length % 64) !== 56) msg.push(0);
-        var mlArr = [
-            (ml & 0xff), (ml >>> 8) & 0xff, (ml >>> 16) & 0xff, (ml >>> 24) & 0xff,
-            0, 0, 0, 0
+    // ------------- 纯JS MD5函数（无嵌套、无原生API依赖，解决兼容报错） -------------
+    function md5(str) {
+        var rotl = function(n, r) {
+            return (n << r) | (n >>> (32 - r));
+        };
+        var uint8ToUint32 = function(arr) {
+            var res = [];
+            for (var i = 0; i < arr.length; i += 4) {
+                res.push(arr[i] | (arr[i + 1] << 8) | (arr[i + 2] << 16) | (arr[i + 3] << 24));
+            }
+            return res;
+        };
+        var uint32ToUint8 = function(arr) {
+            var res = [];
+            for (var i = 0; i < arr.length; i++) {
+                res.push(arr[i] & 0xff, (arr[i] >>> 8) & 0xff, (arr[i] >>> 16) & 0xff, (arr[i] >>> 24) & 0xff);
+            }
+            return res;
+        };
+        var padMessage = function(msg) {
+            var ml = msg.length * 8;
+            msg.push(0x80);
+            while ((msg.length % 64) !== 56) msg.push(0);
+            var mlArr = [
+                (ml & 0xff), (ml >>> 8) & 0xff, (ml >>> 16) & 0xff, (ml >>> 24) & 0xff,
+                0, 0, 0, 0
+            ];
+            msg.push.apply(msg, mlArr);
+            return msg;
+        };
+        var K = [
+            0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
+            0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
+            0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
+            0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
+            0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa,
+            0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
+            0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed,
+            0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
+            0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c,
+            0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
+            0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05,
+            0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
+            0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039,
+            0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
+            0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
+            0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391
         ];
-        msg.push.apply(msg, mlArr);
-        return msg;
-    };
-    var K = [
-        0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
-        0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
-        0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
-        0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
-        0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa,
-        0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
-        0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed,
-        0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
-        0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c,
-        0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
-        0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05,
-        0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
-        0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039,
-        0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
-        0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
-        0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391
-    ];
-    var H = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
-    var msg = [];
-    for (var i = 0; i < str.length; i++) {
-        msg.push(str.charCodeAt(i));
-    }
-    msg = padMessage(msg);
-    var M = uint8ToUint32(msg);
-    for (var i = 0; i < M.length; i += 16) {
-        var W = M.slice(i, i + 16);
-        for (var j = 16; j < 64; j++) {
-            var s0 = rotl(W[j - 15], 7) ^ rotl(W[j - 15], 18) ^ (W[j - 15] >>> 3);
-            var s1 = rotl(W[j - 2], 17) ^ rotl(W[j - 2], 19) ^ (W[j - 2] >>> 10);
-            W[j] = (W[j - 16] + s0 + W[j - 7] + s1) >>> 0;
+        var H = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
+        var msg = [];
+        for (var i = 0; i < str.length; i++) {
+            msg.push(str.charCodeAt(i));
         }
-        var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4];
-        for (var j = 0; j < 64; j++) {
-            var S1 = rotl(e, 12) ^ rotl(e, 22) ^ rotl(e, 7);
-            var ch = (e & b) ^ (~e & c);
-            var temp1 = (a + S1 + ch + K[j] + W[j]) >>> 0;
-            var S0 = rotl(a, 7) ^ rotl(a, 12) ^ rotl(a, 22);
-            var maj = (a & b) ^ (a & c) ^ (b & c);
-            var temp2 = (S0 + maj) >>> 0;
-            e = d;
-            d = c;
-            c = b;
-            b = a;
-            a = (temp1 + temp2) >>> 0;
-        }
-        H[0] = (H[0] + a) >>> 0;
-        H[1] = (H[1] + b) >>> 0;
-        H[2] = (H[2] + c) >>> 0;
-        H[3] = (H[3] + d) >>> 0;
-        H[4] = (H[4] + e) >>> 0;
-    }
-    var hash = uint32ToUint8(H);
-    var hex = '';
-    for (var i = 0; i < hash.length; i++) {
-        hex += hash[i].toString(16).padStart(2, '0');
-    }
-    return hex;
-}
-        // ------------- 替换后的管理员登录函数（适配标准MD5函数） -------------
-        function adminLogin() {
-            const inputPwd = prompt("请输入管理员密码：");
-            if (!inputPwd) return;
-            const cleanPwd = inputPwd.trim(); // 去除前后隐藏空格
-            // 适配MD5函数的同步/异步调用
-            let inputHash;
-            // 判断是否为异步调用（现代浏览器）
-            if (typeof md5(cleanPwd) === 'string') {
-                // 旧浏览器：同步获取哈希
-                inputHash = md5(cleanPwd);
-                verifyHash(inputHash);
-            } else {
-                // 现代浏览器：异步获取哈希
-                md5(cleanPwd).then(function(hex) {
-                    inputHash = hex;
-                    verifyHash(inputHash);
-                });
-                return;
+        msg = padMessage(msg);
+        var M = uint8ToUint32(msg);
+        for (var i = 0; i < M.length; i += 16) {
+            var W = M.slice(i, i + 16);
+            for (var j = 16; j < 64; j++) {
+                var s0 = rotl(W[j - 15], 7) ^ rotl(W[j - 15], 18) ^ (W[j - 15] >>> 3);
+                var s1 = rotl(W[j - 2], 17) ^ rotl(W[j - 2], 19) ^ (W[j - 2] >>> 10);
+                W[j] = (W[j - 16] + s0 + W[j - 7] + s1) >>> 0;
             }
-
-            // 哈希验证逻辑（复用代码）
-            function verifyHash(inputHash) {
-                console.log("输入的密码：", cleanPwd);
-                console.log("生成的哈希：", inputHash);
-                console.log("预设的哈希：", PASSWORD_HASH);
-                if (inputHash === PASSWORD_HASH) {
-                    isAdmin = true;
-                    unlockAdminFunctions();
-                    alert("登录成功！已进入管理员模式");
-                } else {
-                    alert("密码错误！请输入正确密码");
-                }
+            var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4];
+            for (var j = 0; j < 64; j++) {
+                var S1 = rotl(e, 12) ^ rotl(e, 22) ^ rotl(e, 7);
+                var ch = (e & b) ^ (~e & c);
+                var temp1 = (a + S1 + ch + K[j] + W[j]) >>> 0;
+                var S0 = rotl(a, 7) ^ rotl(a, 12) ^ rotl(a, 22);
+                var maj = (a & b) ^ (a & c) ^ (b & c);
+                var temp2 = (S0 + maj) >>> 0;
+                e = d;
+                d = c;
+                c = b;
+                b = a;
+                a = (temp1 + temp2) >>> 0;
             }
+            H[0] = (H[0] + a) >>> 0;
+            H[1] = (H[1] + b) >>> 0;
+            H[2] = (H[2] + c) >>> 0;
+            H[3] = (H[3] + d) >>> 0;
+            H[4] = (H[4] + e) >>> 0;
         }
-
-        function unlockAdminFunctions() {
-            document.getElementById('control-area').style.display = 'block';
-            document.getElementById('admin-tip').style.display = 'block';
-            document.querySelectorAll('.delete-section-btn').forEach(btn => {
-                btn.style.display = 'inline-block';
-            });
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.style.display = 'block';
-            });
+        var hash = uint32ToUint8(H);
+        var hex = '';
+        for (var i = 0; i < hash.length; i++) {
+            hex += hash[i].toString(16).padStart(2, '0');
         }
+        return hex;
+    }
 
-        // ------------- 数据处理 -------------
-        function loadData() {
-            if (isAdmin) {
-                const rawData = localStorage.getItem(STORAGE_KEY);
-                if (rawData) {
-                    try {
-                        return JSON.parse(rawData);
-                    } catch (e) {
-                        alert('读取本地数据失败，使用仓库默认音频：' + e.message);
-                        return JSON.parse(JSON.stringify(DEFAULT_DATA));
-                    }
-                }
-            }
-            return JSON.parse(JSON.stringify(DEFAULT_DATA));
+    // ------------- 管理员登录函数（简化版，适配同步MD5） -------------
+    function adminLogin() {
+        const inputPwd = prompt("请输入管理员密码：");
+        if (!inputPwd) return;
+        const cleanPwd = inputPwd.trim();
+        const inputHash = md5(cleanPwd); // 同步计算哈希，直接获取结果
+        
+        // 直接验证哈希
+        console.log("输入的密码：", cleanPwd);
+        console.log("生成的哈希：", inputHash);
+        console.log("预设的哈希：", PASSWORD_HASH);
+        
+        if (inputHash === PASSWORD_HASH) {
+            isAdmin = true;
+            unlockAdminFunctions();
+            alert("登录成功！已进入管理员模式");
+        } else {
+            alert("密码错误！请输入正确密码");
         }
+    }
 
-        function saveData(data) {
-            if (isAdmin) {
+    function unlockAdminFunctions() {
+        document.getElementById('control-area').style.display = 'block';
+        document.getElementById('admin-tip').style.display = 'block';
+        document.querySelectorAll('.delete-section-btn').forEach(btn => {
+            btn.style.display = 'inline-block';
+        });
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.style.display = 'block';
+        });
+    }
+
+    // ------------- 数据处理 -------------
+    function loadData() {
+        if (isAdmin) {
+            const rawData = localStorage.getItem(STORAGE_KEY);
+            if (rawData) {
                 try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    return JSON.parse(rawData);
                 } catch (e) {
-                    alert('保存本地数据失败：' + e.message);
+                    alert('读取本地数据失败，使用仓库默认音频：' + e.message);
+                    return JSON.parse(JSON.stringify(DEFAULT_DATA));
                 }
             }
         }
+        return JSON.parse(JSON.stringify(DEFAULT_DATA));
+    }
 
-        // ------------- 音频播放控制（核心修复部分） -------------
-        function stopCurrentAudio() {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0; // 重置音频播放位置
-                currentAudio = null; // 清空当前音频引用
+    function saveData(data) {
+        if (isAdmin) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            } catch (e) {
+                alert('保存本地数据失败：' + e.message);
             }
         }
+    }
 
-        function playAudio(audioUrl) {
-            // 修复核心：先停止当前音频（无论是否是长音频），不直接return，继续播放新音频
-            stopCurrentAudio();
+    // ------------- 音频播放控制（核心修复部分） -------------
+    function stopCurrentAudio() {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+            currentAudio = null;
+        }
+    }
 
-            const encodedAudioUrl = encodeURI(audioUrl);
-            let audio;
+    function playAudio(audioUrl) {
+        stopCurrentAudio();
 
-            // 音频缓存逻辑不变
-            if (audioCache[encodedAudioUrl]) {
-                audio = audioCache[encodedAudioUrl];
-            } else {
-                audio = new Audio(encodedAudioUrl);
-                audioCache[encodedAudioUrl] = audio;
+        const encodedAudioUrl = encodeURI(audioUrl);
+        let audio;
+
+        if (audioCache[encodedAudioUrl]) {
+            audio = audioCache[encodedAudioUrl];
+        } else {
+            audio = new Audio(encodedAudioUrl);
+            audioCache[encodedAudioUrl] = audio;
+        }
+
+        audio.muted = true;
+        audio.load();
+        audio.play().then(() => {
+            audio.muted = false;
+            currentAudio = audio;
+        }).catch(error => {
+            console.log('播放提示：', error.message);
+            if (error.message.includes('user interaction') || error.message.includes('User')) {
+                const tip = document.createElement('div');
+                tip.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#ff4466;color:white;padding:10px 20px;border-radius:8px;z-index:9999;';
+                tip.textContent = '先点击页面空白处激活，再播放音频哦～';
+                document.body.appendChild(tip);
+                setTimeout(() => {
+                    document.body.removeChild(tip);
+                }, 3000);
             }
-
-            // 播放逻辑优化，确保状态正确
-            audio.muted = true;
-            audio.load();
+            audio.muted = false;
             audio.play().then(() => {
-                audio.muted = false;
-                currentAudio = audio; // 播放成功后，赋值当前音频
-            }).catch(error => {
-                console.log('播放提示：', error.message);
-                if (error.message.includes('user interaction') || error.message.includes('User')) {
-                    const tip = document.createElement('div');
-                    tip.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#ff4466;color:white;padding:10px 20px;border-radius:8px;z-index:9999;';
-                    tip.textContent = '先点击页面空白处激活，再播放音频哦～';
-                    document.body.appendChild(tip);
-                    setTimeout(() => {
-                        document.body.removeChild(tip);
-                    }, 3000);
-                }
-                audio.muted = false;
-                // 重试播放后，也要赋值当前音频
-                audio.play().then(() => {
-                    currentAudio = audio;
-                }).catch(err => console.log('重试播放失败：', err.message));
+                currentAudio = audio;
+            }).catch(err => console.log('重试播放失败：', err.message));
+        });
+
+        audio.onended = () => { currentAudio = null; };
+        audio.onabort = () => { currentAudio = null; };
+        audio.onerror = () => { currentAudio = null; };
+    }
+
+    function pauseAllAudio() {
+        if (currentAudio) currentAudio.pause();
+    }
+
+    // ------------- DOM和渲染（无修改） -------------
+    function getDOMElements() {
+        return {
+            pauseAllBtn: document.getElementById('pause-all-btn'),
+            sectionNameInput: document.getElementById('section-name'),
+            addSectionBtn: document.getElementById('add-section-btn'),
+            sectionSelect: document.getElementById('section-select'),
+            btnTextInput: document.getElementById('btn-text'),
+            audioUrlInput: document.getElementById('audio-url'),
+            addBtn: document.getElementById('add-btn'),
+            loadingTip: document.getElementById('loading-tip'),
+            audioForm: document.getElementById('audio-form'),
+            boardContainer: document.getElementById('board-container'),
+            clearDataBtn: document.getElementById('clear-data-btn'),
+            adminLoginBtn: document.getElementById('admin-login-btn'),
+            exportDataBtn: document.getElementById('export-data-btn')
+        };
+    }
+
+    function renderAllSections() {
+        const els = getDOMElements();
+        els.boardContainer.innerHTML = '';
+        const boardData = loadData();
+        boardData.sections.forEach(sectionName => {
+            const section = document.createElement('div');
+            section.className = 'section';
+            section.dataset.section = sectionName;
+            section.innerHTML = `
+                <div class="section-header">
+                    <h3>${sectionName}</h3>
+                    <button class="delete-section-btn" data-section="${sectionName}">删除板块</button>
+                </div>
+                <div class="button-group" id="section-${sectionName}"></div>
+            `;
+            els.boardContainer.appendChild(section);
+            section.querySelector('.delete-section-btn').addEventListener('click', (e) => {
+                if (isAdmin) deleteSection(e.target.dataset.section);
+                else alert('无权限删除！请先登录管理员');
             });
+            renderButtonsInSection(sectionName);
+        });
+        if (isAdmin) unlockAdminFunctions();
+    }
 
-            // 音频结束/终止时，清空当前音频引用
-            audio.onended = () => { currentAudio = null; };
-            audio.onabort = () => { currentAudio = null; };
-            audio.onerror = () => { currentAudio = null; }; // 新增错误处理，防止内存泄漏
-        }
-
-        function pauseAllAudio() {
-            if (currentAudio) currentAudio.pause();
-        }
-
-        // ------------- DOM和渲染（无修改） -------------
-        function getDOMElements() {
-            return {
-                pauseAllBtn: document.getElementById('pause-all-btn'),
-                sectionNameInput: document.getElementById('section-name'),
-                addSectionBtn: document.getElementById('add-section-btn'),
-                sectionSelect: document.getElementById('section-select'),
-                btnTextInput: document.getElementById('btn-text'),
-                audioUrlInput: document.getElementById('audio-url'),
-                addBtn: document.getElementById('add-btn'),
-                loadingTip: document.getElementById('loading-tip'),
-                audioForm: document.getElementById('audio-form'),
-                boardContainer: document.getElementById('board-container'),
-                clearDataBtn: document.getElementById('clear-data-btn'),
-                adminLoginBtn: document.getElementById('admin-login-btn'),
-                exportDataBtn: document.getElementById('export-data-btn')
-            };
-        }
-
-        function renderAllSections() {
-            const els = getDOMElements();
-            els.boardContainer.innerHTML = '';
-            const boardData = loadData();
-            boardData.sections.forEach(sectionName => {
-                const section = document.createElement('div');
-                section.className = 'section';
-                section.dataset.section = sectionName;
-                section.innerHTML = `
-                    <div class="section-header">
-                        <h3>${sectionName}</h3>
-                        <button class="delete-section-btn" data-section="${sectionName}">删除板块</button>
-                    </div>
-                    <div class="button-group" id="section-${sectionName}"></div>
-                `;
-                els.boardContainer.appendChild(section);
-                section.querySelector('.delete-section-btn').addEventListener('click', (e) => {
-                    if (isAdmin) deleteSection(e.target.dataset.section);
-                    else alert('无权限删除！请先登录管理员');
-                });
-                renderButtonsInSection(sectionName);
+    function renderButtonsInSection(sectionName) {
+        const btnContainer = document.getElementById(`section-${sectionName}`);
+        if (!btnContainer) return;
+        btnContainer.innerHTML = '';
+        const boardData = loadData();
+        const sectionButtons = boardData.buttons.filter(btn => btn.section === sectionName);
+        sectionButtons.forEach(btn => {
+            const btnWrapper = document.createElement('div');
+            btnWrapper.className = 'audio-btn-wrapper';
+            btnWrapper.dataset.btnId = btn.id;
+            const playBtn = document.createElement('button');
+            playBtn.className = 'play-btn';
+            playBtn.textContent = btn.text;
+            playBtn.addEventListener('click', () => playAudio(btn.audioUrl));
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = '×';
+            deleteBtn.title = '删除该按钮';
+            deleteBtn.addEventListener('click', () => {
+                if (isAdmin) deleteButton(btn.id);
+                else alert('无权限删除！请先登录管理员');
             });
-            if (isAdmin) unlockAdminFunctions();
-        }
+            btnWrapper.appendChild(playBtn);
+            btnWrapper.appendChild(deleteBtn);
+            btnContainer.appendChild(btnWrapper);
+        });
+    }
 
-        function renderButtonsInSection(sectionName) {
-            const btnContainer = document.getElementById(`section-${sectionName}`);
-            if (!btnContainer) return;
-            btnContainer.innerHTML = '';
-            const boardData = loadData();
-            const sectionButtons = boardData.buttons.filter(btn => btn.section === sectionName);
-            sectionButtons.forEach(btn => {
-                const btnWrapper = document.createElement('div');
-                btnWrapper.className = 'audio-btn-wrapper';
-                btnWrapper.dataset.btnId = btn.id;
-                const playBtn = document.createElement('button');
-                playBtn.className = 'play-btn';
-                playBtn.textContent = btn.text;
-                playBtn.addEventListener('click', () => playAudio(btn.audioUrl));
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'delete-btn';
-                deleteBtn.textContent = '×';
-                deleteBtn.title = '删除该按钮';
-                deleteBtn.addEventListener('click', () => {
-                    if (isAdmin) deleteButton(btn.id);
-                    else alert('无权限删除！请先登录管理员');
-                });
-                btnWrapper.appendChild(playBtn);
-                btnWrapper.appendChild(deleteBtn);
-                btnContainer.appendChild(btnWrapper);
-            });
-        }
+    function initSectionSelect() {
+        const els = getDOMElements();
+        els.sectionSelect.innerHTML = '';
+        const boardData = loadData();
+        boardData.sections.forEach(sectionName => {
+            const option = document.createElement('option');
+            option.value = sectionName;
+            option.textContent = sectionName;
+            els.sectionSelect.appendChild(option);
+        });
+    }
 
-        function initSectionSelect() {
-            const els = getDOMElements();
-            els.sectionSelect.innerHTML = '';
-            const boardData = loadData();
-            boardData.sections.forEach(sectionName => {
-                const option = document.createElement('option');
-                option.value = sectionName;
-                option.textContent = sectionName;
-                els.sectionSelect.appendChild(option);
-            });
-        }
-
-        // ------------- 删除功能 -------------
-        function deleteButton(btnId) {
-            if (!isAdmin) return;
-            if (confirm('确定删除该按钮吗？（仅删除本地数据，仓库音频仍保留）')) {
-                let boardData = loadData();
-                boardData.buttons = boardData.buttons.filter(btn => btn.id !== btnId);
-                saveData(boardData);
-                renderAllSections();
-            }
-        }
-
-        function deleteSection(sectionName) {
-            if (!isAdmin) return;
-            if (confirm(`确定删除「${sectionName}」板块吗？（仅删除本地数据）`)) {
-                let boardData = loadData();
-                boardData.sections = boardData.sections.filter(name => name !== sectionName);
-                boardData.buttons = boardData.buttons.filter(btn => btn.section !== sectionName);
-                saveData(boardData);
-                renderAllSections();
-                initSectionSelect();
-            }
-        }
-
-        // ------------- 添加功能 -------------
-        function addNewSection() {
-            if (!isAdmin) return;
-            const els = getDOMElements();
-            const name = els.sectionNameInput.value.trim();
-            if (!name) { alert('请输入板块名称！'); return; }
+    // ------------- 删除功能 -------------
+    function deleteButton(btnId) {
+        if (!isAdmin) return;
+        if (confirm('确定删除该按钮吗？（仅删除本地数据，仓库音频仍保留）')) {
             let boardData = loadData();
-            if (boardData.sections.includes(name)) { alert('该板块已存在！'); return; }
-            boardData.sections.push(name);
+            boardData.buttons = boardData.buttons.filter(btn => btn.id !== btnId);
+            saveData(boardData);
+            renderAllSections();
+        }
+    }
+
+    function deleteSection(sectionName) {
+        if (!isAdmin) return;
+        if (confirm(`确定删除「${sectionName}」板块吗？（仅删除本地数据）`)) {
+            let boardData = loadData();
+            boardData.sections = boardData.sections.filter(name => name !== sectionName);
+            boardData.buttons = boardData.buttons.filter(btn => btn.section !== sectionName);
             saveData(boardData);
             renderAllSections();
             initSectionSelect();
-            els.sectionNameInput.value = '';
         }
+    }
 
-        function addNewAudioBtn() {
-            if (!isAdmin) { alert('无权限添加！请先登录管理员'); return; }
-            const els = getDOMElements();
-            const sectionName = els.sectionSelect.value;
-            const btnText = els.btnTextInput.value.trim();
-            const audioUrl = els.audioUrlInput.value.trim();
-            if (!btnText) { alert('请输入按钮文字！'); return; }
-            if (!audioUrl) { alert('请输入有效的音频地址！'); return; }
-            const isMp3 = audioUrl.endsWith('.mp3') || audioUrl.endsWith('.MP3');
-            if (!isMp3) { alert('请输入MP3格式的音频地址！（Edge浏览器仅支持MP3）'); return; }
-            try {
-                let boardData = loadData();
-                const btnId = Date.now().toString();
-                boardData.buttons.push({ id: btnId, section: sectionName, text: btnText, audioUrl: audioUrl });
-                saveData(boardData);
-                renderAllSections();
-                els.audioForm.reset();
-                alert('仓库音频按钮添加成功！（如需所有人可见，需更新代码里的DEFAULT_DATA）');
-            } catch (err) {
-                alert(`添加失败：${err.message}`);
-            }
+    // ------------- 添加功能 -------------
+    function addNewSection() {
+        if (!isAdmin) return;
+        const els = getDOMElements();
+        const name = els.sectionNameInput.value.trim();
+        if (!name) { alert('请输入板块名称！'); return; }
+        let boardData = loadData();
+        if (boardData.sections.includes(name)) { alert('该板块已存在！'); return; }
+        boardData.sections.push(name);
+        saveData(boardData);
+        renderAllSections();
+        initSectionSelect();
+        els.sectionNameInput.value = '';
+    }
+
+    function addNewAudioBtn() {
+        if (!isAdmin) { alert('无权限添加！请先登录管理员'); return; }
+        const els = getDOMElements();
+        const sectionName = els.sectionSelect.value;
+        const btnText = els.btnTextInput.value.trim();
+        const audioUrl = els.audioUrlInput.value.trim();
+        if (!btnText) { alert('请输入按钮文字！'); return; }
+        if (!audioUrl) { alert('请输入有效的音频地址！'); return; }
+        const isMp3 = audioUrl.endsWith('.mp3') || audioUrl.endsWith('.MP3');
+        if (!isMp3) { alert('请输入MP3格式的音频地址！（Edge浏览器仅支持MP3）'); return; }
+        try {
+            let boardData = loadData();
+            const btnId = Date.now().toString();
+            boardData.buttons.push({ id: btnId, section: sectionName, text: btnText, audioUrl: audioUrl });
+            saveData(boardData);
+            renderAllSections();
+            els.audioForm.reset();
+            alert('仓库音频按钮添加成功！（如需所有人可见，需更新代码里的DEFAULT_DATA）');
+        } catch (err) {
+            alert(`添加失败：${err.message}`);
         }
+    }
 
-        function clearAllData() {
-            if (!isAdmin) return;
-            if (confirm('确定清空本地数据吗？（仓库默认音频仍保留）')) {
-                const boardData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-                saveData(boardData);
-                renderAllSections();
-                initSectionSelect();
-            }
-        }
-
-        function exportDataToGitHub() {
-            const boardData = loadData();
-            const defaultDataCode = `const DEFAULT_DATA = ${JSON.stringify(boardData, null, 2)};`;
-            navigator.clipboard.writeText(defaultDataCode).then(() => {
-                alert('同步代码已复制！直接粘贴到GitHub的HTML文件里即可');
-            }).catch(err => {
-                alert('复制失败，请手动复制：\n' + defaultDataCode);
-            });
-        }
-
-        // ------------- 初始化 -------------
-        function init() {
-            const els = getDOMElements();
-            els.adminLoginBtn.addEventListener('click', adminLogin);
-            els.pauseAllBtn.addEventListener('click', pauseAllAudio);
-            els.addSectionBtn.addEventListener('click', addNewSection);
-            els.addBtn.addEventListener('click', addNewAudioBtn);
-            els.clearDataBtn.addEventListener('click', clearAllData);
-            els.exportDataBtn.addEventListener('click', exportDataToGitHub);
+    function clearAllData() {
+        if (!isAdmin) return;
+        if (confirm('确定清空本地数据吗？（仓库默认音频仍保留）')) {
+            const boardData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+            saveData(boardData);
             renderAllSections();
             initSectionSelect();
-           
         }
+    }
 
-        init();
-    </script>
-</body>
-</html>
+    function exportDataToGitHub() {
+        const boardData = loadData();
+        const defaultDataCode = `const DEFAULT_DATA = ${JSON.stringify(boardData, null, 2)};`;
+        navigator.clipboard.writeText(defaultDataCode).then(() => {
+            alert('同步代码已复制！直接粘贴到GitHub的HTML文件里即可');
+        }).catch(err => {
+            alert('复制失败，请手动复制：\n' + defaultDataCode);
+        });
+    }
 
+    // ------------- 初始化 -------------
+    function init() {
+        const els = getDOMElements();
+        els.adminLoginBtn.addEventListener('click', adminLogin);
+        els.pauseAllBtn.addEventListener('click', pauseAllAudio);
+        els.addSectionBtn.addEventListener('click', addNewSection);
+        els.addBtn.addEventListener('click', addNewAudioBtn);
+        els.clearDataBtn.addEventListener('click', clearAllData);
+        els.exportDataBtn.addEventListener('click', exportDataToGitHub);
+        renderAllSections();
+        initSectionSelect();
+    }
 
-
-
+    init();
+</script>
