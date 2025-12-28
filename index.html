@@ -227,7 +227,8 @@
     </div>
     <script>
         // ------------- 核心配置（密码已隐藏：改用哈希值对比） -------------
-        const PASSWORD_HASH = "34f2e113d8c9c0393842f252b9756e9c";
+        const PASSWORD_HASH = "34f2e113d8c9c0393842f252b9756e9c"; // 对应的正确32位MD5哈希
+        // 默认内容：音频URL完全不变
         const DEFAULT_DATA = {
   "sections": [
     "又一怪笑",
@@ -1224,12 +1225,13 @@
             els.exportDataBtn.addEventListener('click', exportDataToGitHub);
             renderAllSections();
             initSectionSelect();
+           
+        }
+
         init();
     </script>
 </body>
 </html>
-
-
 
 
 
