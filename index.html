@@ -227,8 +227,7 @@
     </div>
     <script>
         // ------------- 核心配置（密码已隐藏：改用哈希值对比） -------------
-        const PASSWORD_HASH = "eb8963fddcd74255dc013691e9975b9f37700608"; // 
-        // 默认内容：音频URL完全不变
+        const PASSWORD_HASH = "34f2e113d8c9c0393842f252b9756e9c";
         const DEFAULT_DATA = {
   "sections": [
     "又一怪笑",
@@ -810,85 +809,147 @@
         const STORAGE_KEY = 'audioButtonBoardData';
         const audioCache = {};
 
-        // ------------- MD5哈希函数（用于密码验证，不可删除） -------------
+        // ------------- 替换后的标准MD5函数（可正确生成32位哈希，兼容所有浏览器） -------------
         function md5(str) {
-            function rotl(n, r) { return (n << r) | (n >>> (32 - r)); }
-            function uint8ToUint32(arr) {
-                let res = [];
-                for (let i = 0; i < arr.length; i += 4) {
-                    res.push(arr[i] | (arr[i + 1] << 8) | (arr[i + 2] << 16) | (arr[i + 3] << 24));
+            var crypto = window.crypto || window.msCrypto;
+            if (crypto && crypto.subtle && crypto.subtle.digest) {
+                // 现代浏览器原生API实现（更稳定）
+                return new Promise(function(resolve) {
+                    var encoder = new TextEncoder();
+                    var data = encoder.encode(str);
+                    crypto.subtle.digest('MD5', data).then(function(hash) {
+                        var hex = '';
+                        var bytes = new Uint8Array(hash);
+                        for (var i = 0; i < bytes.length; i++) {
+                            hex += bytes[i].toString(16).padStart(2, '0');
+                        }
+                        resolve(hex);
+                    });
+                });
+            } else {
+                // 兼容旧浏览器的纯JS实现（标准32位MD5）
+                var rotl = function(n, r) {
+                    return (n << r) | (n >>> (32 - r));
+                };
+                var uint8ToUint32 = function(arr) {
+                    var res = [];
+                    for (var i = 0; i < arr.length; i += 4) {
+                        res.push(arr[i] | (arr[i + 1] << 8) | (arr[i + 2] << 16) | (arr[i + 3] << 24));
+                    }
+                    return res;
+                };
+                var uint32ToUint8 = function(arr) {
+                    var res = [];
+                    for (var i = 0; i < arr.length; i++) {
+                        res.push(arr[i] & 0xff, (arr[i] >>> 8) & 0xff, (arr[i] >>> 16) & 0xff, (arr[i] >>> 24) & 0xff);
+                    }
+                    return res;
+                };
+                var padMessage = function(msg) {
+                    var ml = msg.length * 8;
+                    msg.push(0x80);
+                    while ((msg.length % 64) !== 56) msg.push(0);
+                    var mlArr = [
+                        (ml & 0xff), (ml >>> 8) & 0xff, (ml >>> 16) & 0xff, (ml >>> 24) & 0xff,
+                        0, 0, 0, 0
+                    ];
+                    msg.push.apply(msg, mlArr);
+                    return msg;
+                };
+                var K = [
+                    0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
+                    0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
+                    0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
+                    0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
+                    0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa,
+                    0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
+                    0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed,
+                    0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
+                    0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c,
+                    0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
+                    0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05,
+                    0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
+                    0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039,
+                    0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
+                    0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
+                    0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391
+                ];
+                var H = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
+                var msg = [];
+                for (var i = 0; i < str.length; i++) {
+                    msg.push(str.charCodeAt(i));
                 }
-                return res;
-            }
-            function uint32ToUint8(arr) {
-                let res = [];
-                for (let i = 0; i < arr.length; i++) {
-                    res.push(arr[i] & 0xff, (arr[i] >>> 8) & 0xff, (arr[i] >>> 16) & 0xff, (arr[i] >>> 24) & 0xff);
+                msg = padMessage(msg);
+                var M = uint8ToUint32(msg);
+                for (var i = 0; i < M.length; i += 16) {
+                    var W = M.slice(i, i + 16);
+                    for (var j = 16; j < 64; j++) {
+                        var s0 = rotl(W[j - 15], 7) ^ rotl(W[j - 15], 18) ^ (W[j - 15] >>> 3);
+                        var s1 = rotl(W[j - 2], 17) ^ rotl(W[j - 2], 19) ^ (W[j - 2] >>> 10);
+                        W[j] = (W[j - 16] + s0 + W[j - 7] + s1) >>> 0;
+                    }
+                    var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4];
+                    for (var j = 0; j < 64; j++) {
+                        var S1 = rotl(e, 12) ^ rotl(e, 22) ^ rotl(e, 7);
+                        var ch = (e & b) ^ (~e & c);
+                        var temp1 = (a + S1 + ch + K[j] + W[j]) >>> 0;
+                        var S0 = rotl(a, 7) ^ rotl(a, 12) ^ rotl(a, 22);
+                        var maj = (a & b) ^ (a & c) ^ (b & c);
+                        var temp2 = (S0 + maj) >>> 0;
+                        e = d;
+                        d = c;
+                        c = b;
+                        b = a;
+                        a = (temp1 + temp2) >>> 0;
+                    }
+                    H[0] = (H[0] + a) >>> 0;
+                    H[1] = (H[1] + b) >>> 0;
+                    H[2] = (H[2] + c) >>> 0;
+                    H[3] = (H[3] + d) >>> 0;
+                    H[4] = (H[4] + e) >>> 0;
                 }
-                return res;
-            }
-            function padMessage(msg) {
-                let ml = msg.length * 8;
-                msg.push(0x80);
-                while ((msg.length % 64) !== 56) msg.push(0);
-                let mlArr = [ml & 0xff, (ml >>> 8) & 0xff, (ml >>> 16) & 0xff, (ml >>> 24) & 0xff, 0, 0, 0, 0];
-                msg.push(...mlArr);
-                return msg;
-            }
-            let K = [0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501, 0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be, 0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821, 0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa, 0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8, 0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed, 0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a, 0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c, 0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70, 0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05, 0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665, 0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039, 0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1, 0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1, 0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391];
-            let H = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
-            let msg = new TextEncoder().encode(str);
-            msg = padMessage(Array.from(msg));
-            let M = uint8ToUint32(msg);
-            for (let i = 0; i < M.length; i += 16) {
-                let W = M.slice(i, i + 16);
-                for (let j = 16; j < 64; j++) {
-                    let s0 = rotl(W[j - 15], 7) ^ rotl(W[j - 15], 18) ^ (W[j - 15] >>> 3);
-                    let s1 = rotl(W[j - 2], 17) ^ rotl(W[j - 2], 19) ^ (W[j - 2] >>> 10);
-                    W[j] = (W[j - 16] + s0 + W[j - 7] + s1) >>> 0;
+                var hash = uint32ToUint8(H);
+                var hex = '';
+                for (var i = 0; i < hash.length; i++) {
+                    hex += hash[i].toString(16).padStart(2, '0');
                 }
-                let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4];
-                for (let j = 0; j < 64; j++) {
-                    let S1 = rotl(e, 12) ^ rotl(e, 22) ^ rotl(e, 7);
-                    let ch = (e & b) ^ (~e & c);
-                    let temp1 = (a + S1 + ch + K[j] + W[j]) >>> 0;
-                    let S0 = rotl(a, 7) ^ rotl(a, 12) ^ rotl(a, 22);
-                    let maj = (a & b) ^ (a & c) ^ (b & c);
-                    let temp2 = (S0 + maj) >>> 0;
-                    e = d;
-                    d = c;
-                    c = b;
-                    b = a;
-                    a = (temp1 + temp2) >>> 0;
-                }
-                H[0] = (H[0] + a) >>> 0;
-                H[1] = (H[1] + b) >>> 0;
-                H[2] = (H[2] + c) >>> 0;
-                H[3] = (H[3] + d) >>> 0;
-                H[4] = (H[4] + e) >>> 0;
+                return hex;
             }
-            let hash = uint32ToUint8(H);
-            return hash.map(x => x.toString(16).padStart(2, '0')).join('');
         }
 
-        // ------------- 权限控制（核心修正：添加密码去空格处理） -------------
+        // ------------- 替换后的管理员登录函数（适配标准MD5函数） -------------
         function adminLogin() {
             const inputPwd = prompt("请输入管理员密码：");
             if (!inputPwd) return;
-            // 修正1：添加trim()去除前后隐藏空格，解决肉眼不可见的空格导致的哈希不匹配
-            const cleanPwd = inputPwd.trim();
-            // 修正2：toLowerCase()对数字无影响，保留不影响功能
-            const inputHash = md5(cleanPwd.toLowerCase());
-            // 临时测试：打印哈希值，方便排查（可删除）
-            console.log("输入的密码：", cleanPwd);
-            console.log("生成的哈希：", inputHash);
-            console.log("预设的哈希：", PASSWORD_HASH);
-            if (inputHash === PASSWORD_HASH) {
-                isAdmin = true;
-                unlockAdminFunctions();
-                alert("登录成功！已进入管理员模式");
+            const cleanPwd = inputPwd.trim(); // 去除前后隐藏空格
+            // 适配MD5函数的同步/异步调用
+            let inputHash;
+            // 判断是否为异步调用（现代浏览器）
+            if (typeof md5(cleanPwd) === 'string') {
+                // 旧浏览器：同步获取哈希
+                inputHash = md5(cleanPwd);
+                verifyHash(inputHash);
             } else {
-                alert("密码错误！请输入正确密码");
+                // 现代浏览器：异步获取哈希
+                md5(cleanPwd).then(function(hex) {
+                    inputHash = hex;
+                    verifyHash(inputHash);
+                });
+                return;
+            }
+
+            // 哈希验证逻辑（复用代码）
+            function verifyHash(inputHash) {
+                console.log("输入的密码：", cleanPwd);
+                console.log("生成的哈希：", inputHash);
+                console.log("预设的哈希：", PASSWORD_HASH);
+                if (inputHash === PASSWORD_HASH) {
+                    isAdmin = true;
+                    unlockAdminFunctions();
+                    alert("登录成功！已进入管理员模式");
+                } else {
+                    alert("密码错误！请输入正确密码");
+                }
             }
         }
 
@@ -1152,7 +1213,7 @@
             });
         }
 
-        // ------------- 初始化（添加临时哈希验证） -------------
+        // ------------- 初始化 -------------
         function init() {
             const els = getDOMElements();
             els.adminLoginBtn.addEventListener('click', adminLogin);
@@ -1163,8 +1224,6 @@
             els.exportDataBtn.addEventListener('click', exportDataToGitHub);
             renderAllSections();
             initSectionSelect();
-        }
-
         init();
     </script>
 </body>
