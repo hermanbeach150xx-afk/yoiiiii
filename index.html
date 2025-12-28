@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>又一按钮</title>
     <style>
-        /* 所有样式保持不变，无需修改 */
+        /* 所有样式保持不变 */
         body {
             font-family: "微软雅黑", Arial, sans-serif;
             max-width: 1000px;
@@ -227,7 +227,6 @@
     </div>
     <script>
         // ------------- 核心配置（密码已隐藏：改用哈希值对比） -------------
-        // 密码"yoiyoi"的MD5哈希值，别人看不到明文
         const PASSWORD_HASH = "e1671797c52e15f763380b45e841ec32";
         // 默认内容：音频URL完全不变
         const DEFAULT_DATA = {
@@ -876,7 +875,6 @@
         function adminLogin() {
             const inputPwd = prompt("请输入管理员密码：");
             if (!inputPwd) return;
-            // 计算输入密码的哈希值，和预设哈希对比
             const inputHash = md5(inputPwd.toLowerCase());
             if (inputHash === PASSWORD_HASH) {
                 isAdmin = true;
@@ -924,32 +922,36 @@
             }
         }
 
-        // ------------- 音频播放控制（带缓存，无修改） -------------
+        // ------------- 音频播放控制（核心修复部分） -------------
         function stopCurrentAudio() {
             if (currentAudio) {
                 currentAudio.pause();
-                currentAudio.currentTime = 0;
-                currentAudio = null;
+                currentAudio.currentTime = 0; // 重置音频播放位置
+                currentAudio = null; // 清空当前音频引用
             }
         }
 
         function playAudio(audioUrl) {
-            if (currentAudio) {
-                stopCurrentAudio();
-                return;
-            }
+            // 修复核心：先停止当前音频（无论是否是长音频），不直接return，继续播放新音频
+            stopCurrentAudio();
+
             const encodedAudioUrl = encodeURI(audioUrl);
             let audio;
+
+            // 音频缓存逻辑不变
             if (audioCache[encodedAudioUrl]) {
                 audio = audioCache[encodedAudioUrl];
             } else {
                 audio = new Audio(encodedAudioUrl);
                 audioCache[encodedAudioUrl] = audio;
             }
+
+            // 播放逻辑优化，确保状态正确
             audio.muted = true;
             audio.load();
             audio.play().then(() => {
                 audio.muted = false;
+                currentAudio = audio; // 播放成功后，赋值当前音频
             }).catch(error => {
                 console.log('播放提示：', error.message);
                 if (error.message.includes('user interaction') || error.message.includes('User')) {
@@ -962,11 +964,16 @@
                     }, 3000);
                 }
                 audio.muted = false;
-                audio.play().catch(err => console.log('重试播放失败：', err.message));
+                // 重试播放后，也要赋值当前音频
+                audio.play().then(() => {
+                    currentAudio = audio;
+                }).catch(err => console.log('重试播放失败：', err.message));
             });
+
+            // 音频结束/终止时，清空当前音频引用
             audio.onended = () => { currentAudio = null; };
             audio.onabort = () => { currentAudio = null; };
-            currentAudio = audio;
+            audio.onerror = () => { currentAudio = null; }; // 新增错误处理，防止内存泄漏
         }
 
         function pauseAllAudio() {
