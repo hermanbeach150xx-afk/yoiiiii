@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>又一按钮</title>
-    <style>
+    <style><!-- 引入不蒜子统计脚本（实时访问人数） -->
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
         /* 样式和之前一致，无需修改 */
         body {
             font-family: "微软雅黑", Arial, sans-serif;
@@ -219,7 +220,14 @@
         </div>
     </div>
     <div class="board-container" id="board-container"></div>
-
+<!-- 访问人数显示区域（自定义样式，可修改） -->
+<div style="text-align: center; margin: 20px 0; font-size: 14px; color: #666; padding-top: 20px; border-top: 1px solid #eee;">
+    👥 总独立访客数：<span id="busuanzi_value_site_uv"></span>
+    &nbsp;&nbsp;｜&nbsp;&nbsp;
+    📊 总访问量：<span id="busuanzi_value_site_pv"></span>
+    &nbsp;&nbsp;｜&nbsp;&nbsp;
+    📅 今日访问量：<span id="busuanzi_value_page_pv"></span>
+</div>
     <script>
         // ------------- 核心配置 -------------
         const ADMIN_PASSWORD = "yoiyoi"; // 密码保持不变，统一拼写
@@ -1133,6 +1141,7 @@
     </script>
 </body>
 </html>
+
 
 
 
