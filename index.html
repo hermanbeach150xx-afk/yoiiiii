@@ -227,7 +227,7 @@
     </div>
     <script>
         // ------------- 核心配置（密码已隐藏：改用哈希值对比） -------------
-        const PASSWORD_HASH = "34f2e113d8c9c0393842f252b9756e9c";
+        const PASSWORD_HASH = "34f2e113d8c9c0393842f252b9756e9c"; // 0128对应的正确哈希
         // 默认内容：音频URL完全不变
         const DEFAULT_DATA = {
   "sections": [
@@ -871,11 +871,18 @@
             return hash.map(x => x.toString(16).padStart(2, '0')).join('');
         }
 
-        // ------------- 权限控制（密码验证改为哈希对比） -------------
+        // ------------- 权限控制（核心修正：添加密码去空格处理） -------------
         function adminLogin() {
             const inputPwd = prompt("请输入管理员密码：");
             if (!inputPwd) return;
-            const inputHash = md5(inputPwd.toLowerCase());
+            // 修正1：添加trim()去除前后隐藏空格，解决肉眼不可见的空格导致的哈希不匹配
+            const cleanPwd = inputPwd.trim();
+            // 修正2：toLowerCase()对数字无影响，保留不影响功能
+            const inputHash = md5(cleanPwd.toLowerCase());
+            // 临时测试：打印哈希值，方便排查（可删除）
+            console.log("输入的密码：", cleanPwd);
+            console.log("生成的哈希：", inputHash);
+            console.log("预设的哈希：", PASSWORD_HASH);
             if (inputHash === PASSWORD_HASH) {
                 isAdmin = true;
                 unlockAdminFunctions();
@@ -1145,7 +1152,7 @@
             });
         }
 
-        // ------------- 初始化 -------------
+        // ------------- 初始化（添加临时哈希验证） -------------
         function init() {
             const els = getDOMElements();
             els.adminLoginBtn.addEventListener('click', adminLogin);
@@ -1162,10 +1169,6 @@
     </script>
 </body>
 </html>
-
-
-
-
 
 
 
