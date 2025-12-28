@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>又一按钮</title>
-    <style><!-- 引入不蒜子统计脚本（实时访问人数） -->
-<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <style>
         /* 样式和之前一致，无需修改 */
         body {
             font-family: "微软雅黑", Arial, sans-serif;
@@ -183,6 +182,8 @@
             display: none;
         }
     </style>
+    <!-- 【修复1：不蒜子脚本移到style外，正确位置】 -->
+    <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 </head>
 <body>
     <div class="admin-login">
@@ -220,18 +221,18 @@
         </div>
     </div>
     <div class="board-container" id="board-container"></div>
-<!-- 访问人数显示区域（自定义样式，可修改） -->
-<div style="text-align: center; margin: 20px 0; font-size: 14px; color: #666; padding-top: 20px; border-top: 1px solid #eee;">
-    👥 总独立访客数：<span id="busuanzi_value_site_uv"></span>
-    &nbsp;&nbsp;｜&nbsp;&nbsp;
-    📊 总访问量：<span id="busuanzi_value_site_pv"></span>
-    &nbsp;&nbsp;｜&nbsp;&nbsp;
-    📅 今日访问量：<span id="busuanzi_value_page_pv"></span>
-</div>
+    <!-- 访问人数显示区域（自定义样式，可修改） -->
+    <div style="text-align: center; margin: 20px 0; font-size: 14px; color: #666; padding-top: 20px; border-top: 1px solid #eee;">
+        👥 总独立访客数：<span id="busuanzi_value_site_uv"></span>
+        &nbsp;&nbsp;｜&nbsp;&nbsp;
+        📊 总访问量：<span id="busuanzi_value_site_pv"></span>
+        &nbsp;&nbsp;｜&nbsp;&nbsp;
+        📅 今日访问量：<span id="busuanzi_value_page_pv"></span>
+    </div>
     <script>
         // ------------- 核心配置 -------------
         const ADMIN_PASSWORD = "yoiyoi"; // 密码保持不变，统一拼写
-        // 默认内容：直接引用仓库里的音频URL，无需Base64
+        // 默认内容：直接引用仓库里的音频URL，无需Base64，URL完全保留不变
      const DEFAULT_DATA = {
   "sections": [
     "又一怪笑",
@@ -284,13 +285,13 @@
       "audioUrl": "https://raw.kkgithub.com/hermanbeach150xx-afk/yoiiiii/main/audio/gua.mp3"
     },
     {
-      "id": "1766903821958",
+      "id": "1766903855758",
       "section": "又一语音",
       "text": "酥酥又（夹）",
       "audioUrl": "https://raw.kkgithub.com/hermanbeach150xx-afk/yoiiiii/main/audio/ssy.mp3"
     },
     {
-      "id": "1766903855758",
+      "id": "1766903885342",
       "section": "又一语音",
       "text": "老公",
       "audioUrl": "https://raw.kkgithub.com/hermanbeach150xx-afk/yoiiiii/main/audio/lg.mp3"
@@ -864,7 +865,7 @@
             }
         }
 
-        // ------------- 音频播放控制（核心：优化Edge浏览器兼容） -------------
+        // ------------- 音频播放控制（核心：优化Edge兼容，移除强制弹窗，URL不变） -------------
         function stopCurrentAudio() {
             if (currentAudio) {
                 currentAudio.pause();
@@ -874,26 +875,43 @@
         }
 
         function playAudio(audioUrl) {
-            stopCurrentAudio();
-            // 对URL进行编码处理，解决特殊字符解析问题
+            // 新增：避免重复创建音频，减少异常
+            if (currentAudio) {
+                stopCurrentAudio();
+                return;
+            }
+            // 对URL进行编码处理，解决特殊字符问题，URL本身不修改
             const encodedAudioUrl = encodeURI(audioUrl);
             const audio = new Audio(encodedAudioUrl);
             
-            // Edge兼容：先静音加载，再取消静音播放，规避自动播放拦截
+            // Edge兼容：先静音加载，再取消静音播放
             audio.muted = true;
             audio.load();
 
             audio.play().then(() => {
-                // 加载成功后取消静音
                 audio.muted = false;
             }).catch(error => {
-                alert('📱 播放提示：\n1. 先点击页面空白处激活，再点播放\n2. 建议使用最新版Edge/Chrome\n3. 错误原因：' + error.message);
-                // 手动重试播放（兼容Edge严格策略）
+                // 【修复2：移除alert弹窗，改用控制台打印】
+                console.log('播放提示：', error.message);
+                // 仅在用户未激活页面时，显示3秒自动消失的轻量提示
+                if (error.message.includes('user interaction') || error.message.includes('User')) {
+                    const tip = document.createElement('div');
+                    tip.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#ff4466;color:white;padding:10px 20px;border-radius:8px;z-index:9999;';
+                    tip.textContent = '先点击页面空白处激活，再播放音频哦～';
+                    document.body.appendChild(tip);
+                    setTimeout(() => {
+                        document.body.removeChild(tip);
+                    }, 3000);
+                }
+                // 手动重试播放，不弹窗
                 audio.muted = false;
-                audio.play();
+                audio.play().catch(err => console.log('重试播放失败：', err.message));
             });
 
             audio.onended = () => {
+                currentAudio = null;
+            };
+            audio.onabort = () => {
                 currentAudio = null;
             };
             currentAudio = audio;
@@ -974,7 +992,7 @@
                 playBtn.className = 'play-btn';
                 playBtn.textContent = btn.text;
                 playBtn.addEventListener('click', () => {
-                    // 播放仓库里的音频URL
+                    // 播放仓库里的音频URL，URL完全不变
                     playAudio(btn.audioUrl);
                 });
 
@@ -1141,8 +1159,6 @@
     </script>
 </body>
 </html>
-
-
 
 
 
